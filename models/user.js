@@ -1,26 +1,28 @@
-const mongoUtils = require('../utils/mongo');
 const bcrypt = require('bcrypt');
+const mongoUtils = require('../utils/mongo');
+const getUserId = require('../auth/getUserId');
+
 const saltRounds = 10;
 
 
 const User = {
     id: 'UID',
+    userId: 'String',
     username: 'String',
     password: 'hashed String',
     dateCreated: 'date',
     lastLogin: 'date',
     image: 'String',
     posts: ['postIdRef'],
-    comment: ['commentIdRef'],
+    comments: ['commentIdRef'],
+    categories: ['categoryIdRef'],
     preferences: {}
 }
 
 async function createUser(req, res) {
     const {username, password, image = 'https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909__340.png'} = req.body;
-
-    const errors = [];
-
     const userExists = await mongoUtils.read({collection: 'user', username: username});
+    const errors = [];
 
     if (userExists) {
         errors.push({msg: 'username already exists, please use another username'});
@@ -40,8 +42,6 @@ async function createUser(req, res) {
 
     const hashedPass = await bcrypt.hash(password, saltRounds);
 
-    // const testHashEqualsPass = await bcrypt.compare("123", hashedPass);
-
     const result = await mongoUtils.create({
         collection: 'user',
         data: {
@@ -52,6 +52,7 @@ async function createUser(req, res) {
             image,
             posts: [],
             comments: [],
+            categories: [],
             preferences: {}
         }
     });
@@ -67,7 +68,7 @@ async function readUser(req, res) {
 }
 
 async function updateUser(req, res) {
-    const {userId} = req.params;
+    const userId = getUserId(req.get('authorization'));
 
     const data = {};
     const validFields = ['username', 'password', 'image', 'preferences'];
@@ -86,7 +87,7 @@ async function updateUser(req, res) {
 }
 
 async function deleteUser(req, res) {
-    const {userId} = req.params;
+    const userId = getUserId(req.get('authorization'));
 
     await mongoUtils.delete({collection: 'user', id: userId});
 

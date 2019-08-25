@@ -19,7 +19,11 @@ function read({id, username, collection}) {
     });
 }
 
-function create({data, collection}) {
+function create({userId, collection, data}) {
+    if (collection !== 'user') {
+        data.userId = userId
+    }
+
     return new Promise((resolve, reject) => {
         mongo.MongoClient.connect(url, function(err, db) {
             if (err) reject(err);
@@ -33,16 +37,20 @@ function create({data, collection}) {
     });
 }
 
-function update({id, data, collection}) {
+function update({id, userId, data, collection}) {
+    const query = { _id: new mongo.ObjectID(id) };
+
+    if (collection !== 'user') {
+        query.userId = userId;
+    }
+
     return new Promise((resolve, reject) => {
         mongo.MongoClient.connect(url, function(err, db) {
             if (err) reject(err);
             const dbo = db.db(dbName);
             dbo.collection(collection).updateOne(
-                { _id: new mongo.ObjectID(id) },
-                {
-                    $set: data
-                },
+                query,
+                { $set: data },
                 function(err, result) {
                     if (err) reject(err);
                     resolve(result);
@@ -53,12 +61,38 @@ function update({id, data, collection}) {
     });
 }
 
-function deleteId({id, collection}) {
+function add({id, userId, collection, key, data}) {
+    const query = { _id: new mongo.ObjectID(id), userId };
+
     return new Promise((resolve, reject) => {
         mongo.MongoClient.connect(url, function(err, db) {
             if (err) reject(err);
             const dbo = db.db(dbName);
-            dbo.collection(collection).deleteOne({ _id: new mongo.ObjectID(id) }, function(err, result) {
+            dbo.collection(collection).updateOne(
+                query,
+                { $push: {[key]: data} },
+                function(err, result) {
+                    if (err) reject(err);
+                    resolve(result);
+                    db.close();
+                }
+            );
+        });
+    });
+}
+
+function deleteId({id, userId, collection}) {
+    const query = { _id: new mongo.ObjectID(id) };
+
+    if (collection !== 'user') {
+        query.userId = userId;
+    }
+
+    return new Promise((resolve, reject) => {
+        mongo.MongoClient.connect(url, function(err, db) {
+            if (err) reject(err);
+            const dbo = db.db(dbName);
+            dbo.collection(collection).deleteOne(query, function(err, result) {
                 if (err) reject(err);
                 resolve(result);
                 db.close();
@@ -71,5 +105,6 @@ module.exports = {
     read,
     create,
     update,
-    delete: deleteId
+    delete: deleteId,
+    add
 };
