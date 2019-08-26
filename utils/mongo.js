@@ -62,7 +62,11 @@ function update({id, userId, data, collection}) {
 }
 
 function add({id, userId, collection, key, data}) {
-    const query = { _id: new mongo.ObjectID(id), userId };
+    const query = { _id: new mongo.ObjectID(id) };
+
+    if (collection !== 'user') {
+        query.userId = userId;
+    }
 
     return new Promise((resolve, reject) => {
         mongo.MongoClient.connect(url, function(err, db) {

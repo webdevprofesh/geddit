@@ -37,13 +37,17 @@ async function createComment(req, res) {
         }
     });
 
-    await mongoUtils.add({collection: 'user', id: userId, key: 'comments', data: result.insertedId});
+    const refPromises = [
+        mongoUtils.add({collection: 'user', id: userId, key: 'comments', data: result.insertedId})
+    ];
 
     if (commentId) { // Comment comment
-        await mongoUtils.add({collection: 'comment', id: commentId, key: 'comments', data: result.insertedId});
+        refPromises.push(mongoUtils.add({collection: 'comment', id: commentId, userId, key: 'comments', data: result.insertedId}));
     } else { // Post comment
-        await mongoUtils.add({collection: 'post', id: postId, key: 'comments', data: result.insertedId});
+        refPromises.push(mongoUtils.add({collection: 'post', id: postId, userId, key: 'comments', data: result.insertedId}));
     }
+
+    await Promise.all(refPromises);
 
     res.json({commentId: result.insertedId});
 }

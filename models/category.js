@@ -40,7 +40,7 @@ async function createCategory(req, res) {
         }
     });
 
-    await mongoUtils.add({collection: 'user', id: userId, key: 'categories', data: result.insertedId});
+    const userInsResp = await mongoUtils.add({collection: 'user', id: userId, key: 'categories', data: result.insertedId});
 
     res.json({categoryId: result.insertedId});
 }

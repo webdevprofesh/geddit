@@ -7,7 +7,7 @@ const Post = {
     date: 'date',
     title: 'String',
     body: 'String',
-    category: 'CategoryIdRef',
+    categoryId: 'CategoryIdRef',
     image: 'String?',
     edited: false,
     comments: ["CommentIdRef"],
@@ -44,9 +44,12 @@ async function createPost(req, res) {
         }
     });
 
-    await mongoUtils.add({collection: 'user', id: userId, key: 'posts', data: result.insertedId});
+    const refPromises = [
+        mongoUtils.add({collection: 'user', id: userId, key: 'posts', data: result.insertedId}),
+        mongoUtils.add({collection: 'category', id: categoryId, userId, key: 'posts', data: result.insertedId})
+    ];
 
-    await mongoUtils.add({collection: 'category', id: categoryId, key: 'posts', data: result.insertedId});
+    await Promise.all(refPromises);
 
     res.json({postId: result.insertedId});
 }
